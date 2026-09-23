@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Shield, Wifi, BatteryCharging, Signal, RefreshCw, Lock, Globe, Server, CheckCircle2 } from "lucide-react";
 
 interface PhoneMockupProps {
-  highlightFeature?: number | null; // 0, 1, or 2 from parent
+  highlightFeature?: number | null;
   onFeatureSelect?: (index: number) => void;
 }
 
@@ -15,7 +15,6 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
   const [throughputUp, setThroughputUp] = useState(11.4);
   const [simulatingHandover, setSimulatingHandover] = useState(false);
   const [handoverSuccess, setHandoverSuccess] = useState(false);
-  const [handPos, setHandPos] = useState({ x: 50, y: 38, visible: false, tapping: false });
   const [autoDemoActive, setAutoDemoActive] = useState(true);
 
   // Speed ticker
@@ -33,58 +32,53 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
     if (highlightFeature === 1 && isConnected && !simulatingHandover) {
       triggerHandover();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightFeature]);
 
-  // Virtual Hand Auto-Demonstration Loop
+  // Auto-demo loop: auto-toggle + handover sim every ~14s
   useEffect(() => {
     if (!autoDemoActive) return;
 
-    let timeout1: NodeJS.Timeout;
-    let timeout2: NodeJS.Timeout;
-    let timeout3: NodeJS.Timeout;
+    let t1: NodeJS.Timeout;
+    let t2: NodeJS.Timeout;
 
-    const runDemoCycle = () => {
-      // Step 1: Hand appears near the shield button
-      setHandPos({ x: 50, y: 38, visible: true, tapping: false });
+    const cycle = () => {
+      // After 3s, simulate handover
+      t1 = setTimeout(() => {
+        triggerHandover();
+      }, 3000);
 
-      // Step 2: Hand taps the button
-      timeout1 = setTimeout(() => {
-        setHandPos((prev) => ({ ...prev, tapping: true }));
-        
-        // Retrigger toggle or handover
+      // After 9s, toggle connection off then back on
+      t2 = setTimeout(() => {
+        setConnecting(true);
         setTimeout(() => {
-          setHandPos((prev) => ({ ...prev, tapping: false }));
-        }, 300);
-      }, 1500);
-
-      // Step 3: Hand moves to the Handover Switch button
-      timeout2 = setTimeout(() => {
-        setHandPos({ x: 50, y: 88, visible: true, tapping: false });
-
-        timeout3 = setTimeout(() => {
-          setHandPos((prev) => ({ ...prev, tapping: true }));
-          triggerHandover();
+          setIsConnected(false);
+          setConnecting(false);
           setTimeout(() => {
-            setHandPos((prev) => ({ ...prev, visible: false, tapping: false }));
-          }, 400);
-        }, 1200);
-      }, 4000);
+            setConnecting(true);
+            setTimeout(() => {
+              setIsConnected(true);
+              setConnecting(false);
+            }, 400);
+          }, 1800);
+        }, 350);
+      }, 9000);
     };
 
-    const interval = setInterval(runDemoCycle, 14000);
-    const initialRun = setTimeout(runDemoCycle, 2000);
+    const interval = setInterval(cycle, 16000);
+    const initialRun = setTimeout(cycle, 2000);
 
     return () => {
       clearInterval(interval);
       clearTimeout(initialRun);
-      clearTimeout(timeout1);
-      clearTimeout(timeout2);
-      clearTimeout(timeout3);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
-  }, [autoDemoActive, isConnected]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDemoActive]);
 
   const handleManualToggle = () => {
-    setAutoDemoActive(false); // User took control
+    setAutoDemoActive(false);
     if (connecting) return;
     setConnecting(true);
     setTimeout(() => {
@@ -97,7 +91,6 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
     if (simulatingHandover) return;
     setSimulatingHandover(true);
     setHandoverSuccess(false);
-
     setTimeout(() => {
       setSimulatingHandover(false);
       setHandoverSuccess(true);
@@ -107,33 +100,11 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
 
   return (
     <div className="relative mx-auto w-full max-w-[340px] sm:max-w-[370px]">
-      
       {/* Phone chassis */}
-      <div className="relative rounded-[46px] border border-white/[0.14] bg-[#0c0e14] p-3 shadow-2xl shadow-black/80 transition-all">
+      <div className="relative rounded-[46px] border border-white/[0.14] bg-[#0c0e14] p-3 shadow-2xl shadow-black/80">
         
         {/* Screen Bezel */}
         <div className="relative rounded-[38px] bg-[#07080c] overflow-hidden border border-white/[0.08] flex flex-col min-h-[580px] select-none">
-          
-          {/* Animated Hand Tap Cursor */}
-          {handPos.visible && (
-            <div
-              className="absolute z-40 pointer-events-none transition-all duration-700 ease-out flex flex-col items-center"
-              style={{
-                left: `${handPos.x}%`,
-                top: `${handPos.y}%`,
-                transform: `translate(-50%, -50%) scale(${handPos.tapping ? 0.85 : 1})`,
-              }}
-            >
-              {/* Circular Ripple */}
-              {handPos.tapping && (
-                <div className="absolute -inset-3 rounded-full bg-white/30 animate-ping" />
-              )}
-              {/* Hand Icon */}
-              <div className="text-2xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-bounce">
-                👆
-              </div>
-            </div>
-          )}
 
           {/* Android Status Bar */}
           <div className="pt-2 px-5 pb-1 flex items-center justify-between text-[11px] font-mono text-gray-400">
@@ -161,12 +132,11 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
             </div>
           </div>
 
-          {/* Phone App Content */}
+          {/* App Content */}
           <div className="p-5 flex-1 flex flex-col justify-between">
-            
             <div className="space-y-4">
               
-              {/* Status Indicator */}
+              {/* Status */}
               <div className="text-center pt-2">
                 <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">
                   {connecting ? "RE-HANDSHAKING..." : isConnected ? "VPN TUNNEL LOCKED" : "TUNNEL DISARMED"}
@@ -177,21 +147,18 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
                 </h3>
               </div>
 
-              {/* Big Interactive Power Button */}
+              {/* Shield Button */}
               <div className="flex justify-center py-3">
                 <button
                   onClick={handleManualToggle}
                   disabled={connecting}
-                  className={`relative group w-32 h-32 rounded-full flex flex-col items-center justify-center transition-all duration-300 ${
+                  className={`relative w-32 h-32 rounded-full flex flex-col items-center justify-center transition-all duration-300 ${
                     isConnected
                       ? "bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.25)] hover:scale-105 active:scale-95"
                       : "bg-white/[0.05] text-white border border-white/20 hover:border-white/40 active:scale-95"
                   }`}
                 >
-                  <Shield
-                    className={`w-12 h-12 ${connecting ? "animate-spin" : ""}`}
-                    strokeWidth={1.8}
-                  />
+                  <Shield className={`w-12 h-12 ${connecting ? "animate-spin" : ""}`} strokeWidth={1.8} />
                   <span className="text-[10px] font-mono font-bold mt-1 tracking-wider">
                     {connecting ? "LOCKING..." : isConnected ? "ACTIVE" : "TAP TO ARM"}
                   </span>
@@ -201,35 +168,20 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
               {/* Node Details */}
               <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-3.5 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400 flex items-center gap-1.5 font-mono">
-                    <Globe className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Gateway</span>
-                  </span>
+                  <span className="text-gray-400 flex items-center gap-1.5 font-mono"><Globe className="w-3.5 h-3.5" />Gateway</span>
                   <span className="text-white font-medium">Tokyo (HND-01)</span>
                 </div>
-
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400 flex items-center gap-1.5 font-mono">
-                    <Server className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Virtual IP</span>
-                  </span>
-                  <span className="font-mono text-gray-200 text-xs">
-                    {isConnected ? "194.26.29.112" : "Unmasked Origin"}
-                  </span>
+                  <span className="text-gray-400 flex items-center gap-1.5 font-mono"><Server className="w-3.5 h-3.5" />Virtual IP</span>
+                  <span className="font-mono text-gray-200 text-xs">{isConnected ? "194.26.29.112" : "Unmasked Origin"}</span>
                 </div>
-
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400 flex items-center gap-1.5 font-mono">
-                    <Lock className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Cipher</span>
-                  </span>
-                  <span className="font-mono text-gray-300 text-[11px]">
-                    ChaCha20-Poly1305
-                  </span>
+                  <span className="text-gray-400 flex items-center gap-1.5 font-mono"><Lock className="w-3.5 h-3.5" />Cipher</span>
+                  <span className="font-mono text-gray-300 text-[11px]">ChaCha20-Poly1305</span>
                 </div>
               </div>
 
-              {/* Speed Telemetry */}
+              {/* Speed */}
               {isConnected && (
                 <div className="grid grid-cols-2 gap-2 pt-0.5 font-mono">
                   <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-2 text-center">
@@ -244,13 +196,10 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
               )}
             </div>
 
-            {/* Handover Simulation Button */}
-            <div className="pt-3 border-t border-white/[0.06] text-center">
+            {/* Handover Button */}
+            <div className="pt-3 border-t border-white/[0.06]">
               <button
-                onClick={() => {
-                  setAutoDemoActive(false);
-                  triggerHandover();
-                }}
+                onClick={() => { setAutoDemoActive(false); triggerHandover(); }}
                 disabled={simulatingHandover || !isConnected}
                 className={`w-full py-2.5 px-3 rounded-xl border text-xs font-mono flex items-center justify-center gap-2 transition-all ${
                   highlightFeature === 1
@@ -260,16 +209,11 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${simulatingHandover ? "animate-spin" : ""}`} />
                 <span>
-                  {simulatingHandover
-                    ? "Switching Networks..."
-                    : handoverSuccess
-                    ? "Handover Passed (0.00ms Leak)"
-                    : "Simulate Wi-Fi → 5G Switch"}
+                  {simulatingHandover ? "Switching Networks..." : handoverSuccess ? "Handover Passed (0.00ms Leak)" : "Simulate Wi-Fi → 5G Switch"}
                 </span>
               </button>
-
               {handoverSuccess && (
-                <p className="text-[10px] text-emerald-400 font-mono mt-1 flex items-center justify-center gap-1">
+                <p className="text-[10px] text-emerald-400 font-mono mt-1.5 flex items-center justify-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
                   <span>0 packets leaked outside tunnel.</span>
                 </p>
@@ -277,14 +221,9 @@ export default function PhoneMockup({ highlightFeature, onFeatureSelect }: Phone
             </div>
 
           </div>
-
         </div>
       </div>
-
-      <div className="mt-3 text-center text-xs font-mono text-gray-500 flex items-center justify-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-ping" />
-        <span>Live Interactive APK Demo (Auto-playing & Clickable)</span>
-      </div>
+      {/* Removed hand emoji and demo label */}
     </div>
   );
 }
