@@ -13,9 +13,21 @@ export default function Footer() {
           <span className="text-base font-semibold text-white">AlwaysOnVPN</span>
         </div>
 
-        <p className="text-xs font-mono text-gray-500">
-          © {new Date().getFullYear()} AlwaysOnVPN. All rights reserved. Launching in 2 days.
-        </p>
+        <div className="flex flex-col sm:flex-row items-center gap-4 text-xs font-mono text-gray-500">
+          <p>© {new Date().getFullYear()} AlwaysOnVPN. All rights reserved. Launching in 2 days.</p>
+          <span className="hidden sm:inline text-gray-700">·</span>
+          <p>
+            By{" "}
+            <a
+              href="https://preciousadedokun.com.ng"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-white underline underline-offset-4 decoration-white/30 hover:decoration-white transition-colors"
+            >
+              ap
+            </a>
+          </p>
+        </div>
 
       </div>
     </footer>
