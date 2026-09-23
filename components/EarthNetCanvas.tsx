@@ -326,10 +326,10 @@ export default function EarthNetCanvas() {
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // City & Kanji Label
+        // City Label
         ctx.font = "10px 'JetBrains Mono', monospace";
         ctx.fillStyle = "rgba(230, 240, 255, 0.75)";
-        ctx.fillText(`${node.name} [${node.jp}]`, node.projX + 8, node.projY - 4);
+        ctx.fillText(node.name, node.projX + 8, node.projY - 4);
       }
 
       animationFrameId = requestAnimationFrame(render);
