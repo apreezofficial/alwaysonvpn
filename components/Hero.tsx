@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowRight, ShieldCheck, ChevronDown } from "lucide-react";
+import { ArrowRight, ShieldCheck, ChevronDown, Loader2 } from "lucide-react";
 
 interface HeroProps {
   onOpenWaitlist?: () => void;
@@ -67,19 +67,39 @@ export default function Hero({ onOpenWaitlist }: HeroProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || loading) return;
     setLoading(true);
     setError("");
+
     try {
+      // Send as FormData / JSON to proforms endpoint
+      const formData = new FormData();
+      formData.append("email", email);
+
       const res = await fetch("https://app.proforms.top/f/apreez", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        headers: {
+          Accept: "application/json",
+        },
+        body: formData,
       });
-      if (!res.ok) throw new Error("Submission failed");
+
+      if (!res.ok) {
+        // Try fallback JSON payload if formData wasn't accepted
+        const jsonRes = await fetch("https://app.proforms.top/f/apreez", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ email }),
+        });
+        if (!jsonRes.ok) throw new Error("Failed to submit");
+      }
+
       setSubscribed(true);
     } catch {
-      setError("Something went wrong. Try again.");
+      setError("Unable to submit right now. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -89,11 +109,10 @@ export default function Hero({ onOpenWaitlist }: HeroProps) {
     <section className="relative min-h-[90vh] flex flex-col justify-center px-6 sm:px-12 pt-32 pb-20">
       <div className="max-w-6xl mx-auto w-full">
 
-        {/* Launch Pill — just APK, with live timer */}
+        {/* Launch Pill — live timer without 'APK' text */}
         <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.1] text-xs font-mono text-gray-300 backdrop-blur-md mb-10">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-          <span className="tracking-widest uppercase text-gray-400">APK</span>
-          <span className="text-gray-700">·</span>
+          
           {/* Live countdown in the pill */}
           <div className="flex items-center gap-1.5">
             <Digit value={h} label="hr" />
@@ -126,22 +145,40 @@ export default function Hero({ onOpenWaitlist }: HeroProps) {
         {/* Email Form */}
         <div className="mt-10 max-w-md">
           {!subscribed ? (
-            <form onSubmit={handleSubmit} className="flex items-center gap-2">
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 bg-white/[0.04] border border-white/[0.12] focus:border-white/50 px-4 py-3.5 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none transition-all font-mono"
-              />
-              <button
-                type="submit"
-                className="px-6 py-3.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-gray-100 transition-all flex items-center gap-2 flex-shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:scale-[1.02]"
-              >
-                <span>Get APK</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  value={email}
+                  disabled={loading}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 bg-white/[0.04] border border-white/[0.12] focus:border-white/50 px-4 py-3.5 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none transition-all font-mono disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-gray-100 transition-all flex items-center gap-2 flex-shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100 cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Get APK</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+              {error && (
+                <p className="text-xs text-rose-400 font-mono mt-1">
+                  {error}
+                </p>
+              )}
             </form>
           ) : (
             <div className="p-4 rounded-xl bg-white/[0.05] border border-white/[0.12] text-sm text-gray-200 font-mono flex items-center gap-2.5">
@@ -154,7 +191,7 @@ export default function Hero({ onOpenWaitlist }: HeroProps) {
       </div>
 
       {/* Scroll-down swipe indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-600 animate-bounce">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-600 animate-bounce pointer-events-none">
         <ChevronDown className="w-5 h-5" />
         <ChevronDown className="w-5 h-5 -mt-3 opacity-50" />
       </div>
