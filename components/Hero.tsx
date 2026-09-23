@@ -61,12 +61,28 @@ function Digit({ value, label }: { value: number; label: string }) {
 export default function Hero({ onOpenWaitlist }: HeroProps) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const { h, m, s } = useCountdown();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    setSubscribed(true);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("https://app.proforms.top/f/apreez", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error("Submission failed");
+      setSubscribed(true);
+    } catch {
+      setError("Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
