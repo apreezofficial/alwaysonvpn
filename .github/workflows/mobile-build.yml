@@ -57,11 +57,10 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-          cache: gradle
 
       - name: Install npm dependencies
         run: npm ci || npm install --no-audit --no-fund
@@ -76,7 +75,18 @@ jobs:
       #   run: eas build --platform android --profile preview --non-interactive --no-wait
 
       - name: Expo prebuild (Android)
-        run: npx expo prebuild --platform android --no-install --clean
+        run: npx expo prebuild --platform android --clean
+
+      - name: Cache Gradle wrapper and dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            mobile/android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Assemble Android Release APK
         working-directory: mobile/android
