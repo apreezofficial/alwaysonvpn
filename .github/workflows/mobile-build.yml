@@ -1,0 +1,102 @@
+name: AlwaysOnVPN Mobile - Build
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-build.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-build.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  check:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci || npm install --no-audit --no-fund
+
+      - name: TypeScript strict check
+        run: npm run ts:check
+
+  build-android:
+    name: Build Android APK
+    needs: check
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Install npm dependencies
+        run: npm ci || npm install --no-audit --no-fund
+
+      # Optional: use EAS Build instead of local build.
+      # If you prefer EAS, uncomment below and add EXPO_TOKEN to repo secrets.
+      # - name: Setup EAS CLI
+      #   run: npm install -g eas-cli
+      # - name: EAS Build Android
+      #   env:
+      #     EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      #   run: eas build --platform android --profile preview --non-interactive --no-wait
+
+      - name: Expo prebuild (Android)
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Assemble Android Release APK
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease -x test --no-daemon
+
+      - name: Rename APK artifact
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk \
+            alwaysonvpn-android-${{ github.sha }}.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alwaysonvpn-android-${{ github.sha }}
+          path: mobile/alwaysonvpn-android-*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload release asset
+        if: github.event_name == 'release' && github.event.action == 'published'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: mobile/alwaysonvpn-android-${{ github.sha }}.apk

@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "AlwaysOnVPN",
+    "slug": "alwaysonvpn-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#07080c"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.alwaysonvpn.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#07080c"
+      },
+      "package": "com.alwaysonvpn.mobile"
+    },
+    "web": {}
+  }
+}
+
