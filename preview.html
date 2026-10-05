@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AlwaysOnVPN Mobile — UI Preview</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(96,165,250,0.08), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(52,211,153,0.06), transparent 60%),
+      #05060a;
+    color:#e4e4e7;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:40px 20px 80px;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  .page-head{
+    text-align:center;
+    max-width:980px;
+    margin-bottom:36px;
+  }
+  .page-head h1{
+    margin:0 0 8px;
+    font-size:32px;
+    letter-spacing:-0.5px;
+    color:#fff;
+    font-weight:700;
+  }
+  .page-head p{
+    margin:0;
+    color:#71717a;
+    font-size:14px;
+  }
+  .page-head .brand{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    color:#a1a1aa;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    margin-bottom:16px;
+  }
+  .page-head .brand .dot{
+    width:6px;height:6px;border-radius:999px;background:#34d399;box-shadow:0 0 10px #34d399;
+  }
+
+  .phones{
+    display:flex;
+    flex-wrap:wrap;
+    gap:48px;
+    justify-content:center;
+    align-items:flex-start;
+  }
+  .phone-wrap{
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .phone-label{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:11px;letter-spacing:1.4px;text-transform:uppercase;
+    color:#71717a;
+  }
+
+  /* Phone frame */
+  .phone{
+    --w: 380px;
+    width:var(--w);
+    height: calc(var(--w) * 2.02);
+    background:#000;
+    border-radius:48px;
+    padding:12px;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(255,255,255,0.05) inset;
+    position:relative;
+  }
+  .phone::before{
+    content:"";
+    position:absolute;inset:2px;border-radius:46px;
+    background:linear-gradient(180deg, #1b1b1b, #000 40%, #111);
+    z-index:0;
+  }
+  .screen{
+    position:relative;z-index:1;
+    width:100%;height:100%;
+    border-radius:38px;
+    overflow:hidden;
+    background:#07080c;
+    color:#fff;
+    display:block;
+  }
+
+  /* Notch */
+  .notch{
+    position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:110px;height:28px;border-radius:18px;background:#000;z-index:20;
+  }
+
+  /* Status bar */
+  .statusbar{
+    position:relative;
+    padding:14px 24px 6px;
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12px;color:#fff;font-weight:600;
+    padding-top:18px;
+  }
+  .statusbar .icons{display:flex;gap:8px;align-items:center}
+  .statusbar .icons svg{width:14px;height:14px}
+
+  /* Scrollable screen area */
+  .screen-inner{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    padding:0 18px 96px;
+    overflow:hidden;
+  }
+
+  /* Tab bar */
+  .tabbar{
+    position:absolute;left:0;right:0;bottom:0;
+    height:76px;
+    background:#0c0e14;
+    border-top:1px solid rgba(255,255,255,0.08);
+    display:flex;justify-content:space-around;
+    padding-top:8px;
+    padding-bottom:20px;
+    border-bottom-left-radius:38px;
+    border-bottom-right-radius:38px;
+    z-index:15;
+  }
+  .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    gap:4px;color:#71717a;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:0.5px;
+    cursor:pointer;user-select:none;
+  }
+  .tab svg{width:22px;height:22px;stroke-width:1.8}
+  .tab.active{color:#fff}
+
+  /* ======= THEME TOKENS ======= */
+  .c-bg{background:#07080c}
+  .c-surface{background:#0c0e14}
+  .c-surface-soft{background:rgba(255,255,255,0.03)}
+  .c-surface-med{background:rgba(255,255,255,0.05)}
+  .c-surface-high{background:rgba(255,255,255,0.08)}
+  .c-border{border-color:rgba(255,255,255,0.08)}
+  .c-border-strong{border-color:rgba(255,255,255,0.14)}
+  .c-text{color:#fff}
+  .c-muted{color:#a1a1aa}
+  .c-dim{color:#71717a}
+  .c-faint{color:#52525b}
+  .c-success{color:#34d399}
+  .c-danger{color:#f87171}
+  .c-warning{color:#fbbf24}
+  .c-info{color:#60a5fa}
+
+  /* ======= APP HEADER ======= */
+  .app-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 4px 14px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-badge{
+    width:24px;height:24px;border-radius:6px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.14);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .logo-badge svg{width:14px;height:14px}
+  .logo-title{font-size:14px;font-weight:600;letter-spacing:-0.1px;color:#fff}
+  .ao-pill{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;font-weight:700;letter-spacing:1px;
+    padding:3px 8px;border-radius:999px;
+    border:1px solid rgba(255,255,255,0.14);
+    background:rgba(255,255,255,0.05);
+    color:#a1a1aa;
+  }
+  .ao-pill.on{background:#fff;color:#000;border-color:#fff}
+
+  /* ======= HOME SCREEN ======= */
+  .status-section{
+    text-align:center;padding-top:12px;
+  }
+  .status-label{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#71717a;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;
+  }
+  .status-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+  .pulse-dot{
+    width:8px;height:8px;border-radius:999px;background:#34d399;
+    position:relative;
+  }
+  .pulse-dot::before{
+    content:"";position:absolute;inset:-2px;border-radius:999px;
+    background:inherit;
+    box-shadow:0 0 0 0 currentColor;
+    animation:pulse 1.6s ease-out infinite;
+  }
+  .pulse-dot.warn{background:#fbbf24}
+  .pulse-dot.danger{background:#f87171}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(52,211,153,0.55)}
+    70%{box-shadow:0 0 0 14px rgba(52,211,153,0)}
+    100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}
+  }
+  .status-word{font-size:22px;font-weight:700;letter-spacing:-0.3px}
+
+  .shield-wrap{display:flex;justify-content:center;padding:36px 0 28px}
+  .shield-btn{
+    width:138px;height:138px;border-radius:999px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;transition:transform 0.25s cubic-bezier(.2,.8,.2,1);
+    background:#fff;
+    box-shadow:0 0 32px rgba(255,255,255,0.18);
+    position:relative;
+  }
+  .shield-btn.off{
+    background:rgba(255,255,255,0.05);
+    border:1.5px solid rgba(255,255,255,0.2);
+    box-shadow:none;
+  }
+  .shield-btn svg{width:52px;height:52px;color:#000}
+  .shield-btn.off svg{color:#fff}
+  .shield-btn .sub{
+    margin-top:8px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;font-weight:800;letter-spacing:0.8px;
+    color:#000;
+  }
+  .shield-btn.off .sub{color:#fff}
+  .spin{display:inline-block;animation:spin 0.7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .card{
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;padding:14px;
+  }
+  .row{
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .row + .row{margin-top:14px}
+  .label-wrap{display:flex;align-items:center;gap:8px}
+  .label-wrap svg{width:14px;height:14px;color:#a1a1aa}
+  .label{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#a1a1aa;font-size:11px;
+  }
+  .value{font-size:13px;font-weight:500;color:#fff}
+  .value.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .value.small{font-size:10px;color:#a1a1aa}
+  .divider{height:1px;background:rgba(255,255,255,0.08);margin:14px 0 0}
+
+  .throughput{display:flex;gap:10px;margin-top:14px}
+  .tp-cell{
+    flex:1;padding:10px;border-radius:10px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    text-align:center;
+  }
+  .tp-key{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#71717a;font-size:10px;letter-spacing:0.5px;
+  }
+  .tp-val{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#fff;font-weight:600;font-size:13px;margin-top:3px;
+  }
+
+  .footer-section{margin-top:auto;padding-top:14px 4px 0}
+  .footer-divider{height:1px;background:rgba(255,255,255,0.08)}
+  .handover-btn{
+    margin-top:14px;
+    padding:14px 16px;border-radius:14px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.14);
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:11px;color:#fff;
+  }
+  .handover-btn svg{width:14px;height:14px}
+  .handover-success{
+    display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;color:#34d399;
+  }
+  .handover-success svg{width:12px;height:12px}
+
+  /* ======= LOCATIONS SCREEN ======= */
+  .section-head{padding:20px 4px 14px}
+  .section-head .t{font-size:24px;font-weight:700;color:#fff;letter-spacing:-0.5px}
+  .section-head .sub{margin-top:4px;color:#71717a;font-size:13px}
+
+  .fastest{
+    margin:4px 0 14px;
+    padding:14px;border-radius:14px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .fastest-left{display:flex;align-items:center;gap:14px}
+  .zap-badge{
+    width:36px;height:36px;border-radius:10px;
+    background:rgba(251,191,36,0.1);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .zap-badge svg{width:16px;height:16px;color:#fbbf24}
+  .city{font-size:14px;font-weight:600;color:#fff}
+  .country{margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;color:#71717a}
+
+  .server-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:540px;padding-right:2px}
+  .server-list::-webkit-scrollbar{width:0}
+  .server-row{
+    min-height:68px;padding:14px;border-radius:14px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .server-row.selected{
+    background:rgba(255,255,255,0.08);
+    border-color:rgba(255,255,255,0.14);
+  }
+  .server-left{display:flex;align-items:center;flex:1}
+  .flag{font-size:26px;margin-right:14px}
+  .ping{
+    width:60px;text-align:right;padding-right:14px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:11px;font-weight:600;
+  }
+  .load-wrap{width:70px;text-align:right}
+  .load-bar-bg{
+    width:40px;height:4px;border-radius:999px;background:rgba(255,255,255,0.08);overflow:hidden;margin-left:auto}
+  .load-bar-fill{height:4px;border-radius:999px;background:#34d399}
+  .load-text{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;color:#71717a;margin-top:4px;
+  }
+  .check-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    padding:4px 8px;border-radius:999px;background:#fff;color:#000;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;font-weight:700;
+  }
+  check-badge svg{width:12px;height:12px}
+
+  /* ======= SETTINGS SCREEN ======= */
+  .set-section-title{
+    margin:18px 4px 8px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:1.2px;color:#71717a;text-transform:uppercase;font-weight:700;
+  }
+  .set-card{
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;overflow:hidden;
+  }
+  .set-row{
+    min-height:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .set-row + .set-row{border-top:1px solid rgba(255,255,255,0.08)}
+  .set-label{font-size:14px;font-weight:500;color:#fff}
+  .toggle{
+    width:40px;height:24px;border-radius:999px;background:rgba(255,255,255,0.08);
+    position:relative;transition:background 0.2s;
+  }
+  .toggle.on{background:#fff}
+  .toggle::after{
+    content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:999px;
+    background:#71717a;transition:all 0.2s;
+  }
+  .toggle.on::after{left:18px;background:#000}
+
+  .opt-group{
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;overflow:hidden;
+  }
+  .opt-row{
+    min-height:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .opt-row + .opt-row{border-top:1px solid rgba(255,255,255,0.08)}
+  .opt-label{font-size:14px;color:#a1a1aa}
+  .opt-row.selected .opt-label{color:#fff;font-weight:600}
+  .opt-check{width:20px;height:20px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center}
+  .opt-check svg{width:12px;height:12px;color:#000}
+  .opt-empty{
+    width:20px;height:20px;border-radius:999px;
+    border:1px solid rgba(255,255,255,0.14);
+  }
+
+  .reset-btn{
+    margin-top:26px;min-height:44px;padding:0 16px;
+    border-radius:10px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:center;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:11px;font-weight:700;letter-spacing:0.4px;color:#f87171;
+  }
+
+  .footer-line{
+    text-align:center;margin-top:36px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10px;color:#52525b;letter-spacing:0.3px;
+  }
+
+  /* Hint bar */
+  .hint{
+    margin-top:50px;
+    max-width:980px;
+    display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
+    color:#71717a;font-size:12px;
+  }
+  .hint span{
+    padding:6px 10px;border-radius:8px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+  }
+
+  /* Interactivity highlight */
+  .tab[data-tab]{cursor:pointer}
+
+  /* Responsive */
+  @media (max-width: 900px){
+    .phone{--w:340px}
+  }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div class="brand"><span class="dot"></span>AlwaysOnVPN Mobile</div>
+  <h1>Mobile App UI Preview</h1>
+  <p>Three interactive phone mockups rendered from the React Native source. Click tabs on any screen to preview its tab bar.</p>
+</div>
+
+<div class="phones">
+
+  <!-- ============ HOME SCREEN ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">01 · Home / Connect</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <screen>
+        <div class="statusbar">
+          <span>12:00</span>
+          <span class="icons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20V10"/><path d="M12 20V4"/><path d="M17 20v-7"/><path d="M22 20v-12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 11v2"/><path d="M18 11v2"/></svg>
+        </span>
+        </div>
+        <div class="screen-inner">
+          <div class="app-header">
+            <div class="logo">
+              <div class="logo-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div class="logo-title">AlwaysOnVPN</div>
+            </div>
+            <div class="ao-pill on">ALWAYS-ON</div>
+          </div>
+
+          <div class="status-section">
+            <div class="status-label">VPN TUNNEL LOCKED</div>
+            <div class="status-row">
+              <div class="pulse-dot"></div>
+              <div class="status-word">Protected</div>
+            </div>
+          </div>
+
+          <div class="shield-wrap">
+            <div class="shield-btn" id="shieldBtn" onclick="toggleShield(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <div class="sub" id="shieldSub">ACTIVE</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <div class="label-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <div class="label">Gateway</div>
+              </div>
+              <div class="value">Tokyo (HND-01)</div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="label-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/></svg>
+                <div class="label">Virtual IP</div>
+              </div>
+              <div class="value mono" id="vpnIp">194.26.29.112</div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="label-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <div class="label">Cipher</div>
+              </div>
+              <div class="value mono small">ChaCha20-Poly1305</div>
+            </div>
+          </div>
+
+          <div class="throughput">
+            <div class="tp-cell">
+              <div class="tp-key">DOWN</div>
+              <div class="tp-val" id="tpDown">42.1 MB/s</div>
+            </div>
+            <div class="tp-cell">
+              <div class="tp-key">UP</div>
+              <div class="tp-val" id="tpUp">11.4 MB/s</div>
+            </div>
+          </div>
+
+          <div class="footer-section">
+            <div class="footer-divider"></div>
+            <div class="handover-btn" onclick="doHandover(this)">
+              <svg id="hoIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+              <span id="hoText">Simulate Wi-Fi → 5G Switch</span>
+            </div>
+            <div class="handover-success" id="hoSuccess" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              0 packets leaked outside tunnel.
+            </div>
+          </div>
+
+        </div>
+        <div class="tabbar">
+          <div class="tab active" data-screen="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Home
+          </div>
+          <div class="tab" data-screen="locations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Locations
+          </div>
+          <div class="tab" data-screen="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </div>
+        </div>
+      </screen>
+    </div>
+  </div>
+
+  <!-- ============ LOCATIONS SCREEN ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">02 · Locations</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <screen>
+        <div class="statusbar">
+          <span>12:00</span>
+          <span class="icons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20V10"/><path d="M12 20V4"/><path d="M17 20v-7"/><path d="M22 20v-12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 11v2"/><path d="M18 11v2"/></svg>
+        </span>
+        </div>
+        <div class="screen-inner" style="padding-bottom:96px">
+          <div class="section-head">
+            <div class="section-headt">Server Locations</div>
+            <div class="sub">Tap a location to connect</div>
+          </div>
+
+          <div class="fastest selected" onclick="pickServer(this,'fastest')">
+            <div class="fastest-left">
+              <div class="zap-badge">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <div>
+                <div class="city">Fastest Available</div>
+                <div class="country">Auto · London · 18 ms</div>
+              </div>
+            </div>
+            <check-badge>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </check-badge>
+          </div>
+
+          <div class="server-list" id="serverList"></div>
+
+        </div>
+        <div class="tabbar">
+          <div class="tab" data-screen="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Home
+          </div>
+          <div class="tab active" data-screen="locations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Locations
+          </div>
+          <div class="tab" data-screen="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </div>
+        </div>
+      </screen>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS SCREEN ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">03 · Settings</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <screen>
+        <div class="statusbar">
+          <span>12:00</span>
+          <span class="icons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20V10"/><path d="M12 20V4"/><path d="M17 20v-7"/><path d="M22 20v-12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 11v2"/><path d="M18 11v2"/></svg>
+        </span>
+        </div>
+        <div class="screen-inner" style="overflow-y:auto;padding-bottom:96px">
+          <div class="section-head" style="padding-bottom:4px">
+            <div class="section-headt">Settings</div>
+          </div>
+
+          <div class="set-section-title">Connection</div>
+          <div class="set-card">
+            <div class="set-row">
+              <div class="set-label">Always-On</div>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="set-row">
+              <div class="set-label">Auto-Reconnect</div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="set-row">
+              <div class="set-label">Kill Switch</div>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+
+          <div class="set-section-title">Protocol</div>
+          <div class="opt-group" id="protoGroup">
+            <div class="opt-row selected" data-proto="wireguard" onclick="pickProto(this)">
+              <div class="opt-label">WireGuard</div>
+              <div class="opt-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            </div>
+            <div class="opt-row" data-proto="ovpn-udp" onclick="pickProto(this)">
+              <div class="opt-label">OpenVPN UDP</div>
+              <div class="opt-empty"></div>
+            </div>
+            <div class="opt-row" data-proto="ovpn-tcp" onclick="pickProto(this)">
+              <div class="opt-label">OpenVPN TCP</div>
+              <div class="opt-empty"></div>
+            </div>
+          </div>
+
+          <div class="set-section-title">Appearance</div>
+          <div class="opt-group" id="themeGroup">
+            <div class="opt-row selected" data-theme="dark" onclick="pickTheme(this)">
+              <div class="opt-label">Dark</div>
+              <div class="opt-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            </div>
+            <div class="opt-row" data-theme="system" onclick="pickTheme(this)">
+              <div class="opt-label">System</div>
+              <div class="opt-empty"></div>
+            </div>
+          </div>
+
+          <div class="reset-btn" onclick="resetAll()">Reset to Defaults</div>
+
+          <div class="footer-line">AlwaysOnVPN Mobile v1.0.0 · Build 20261005</div>
+        </div>
+        <div class="tabbar">
+          <div class="tab" data-screen="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Home
+          </div>
+          <div class="tab" data-screen="locations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Locations
+          </div>
+          <div class="tab active" data-screen="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </div>
+        </div>
+      </screen>
+    </div>
+  </div>
+
+</div>
+
+<div class="hint">
+  <span>🖱️ Click the shield button to connect / disconnect</span>
+  <span>🔀 Click server rows to select</span>
+  <span>⚙️ Click toggles & option rows in Settings</span>
+  <span>📡 Click the handover button on Home</span>
+</div>
+
+<script>
+  /* ----- Populate server list ----- */
+  const servers = [
+    { id:'hnd-01', city:'Tokyo',       country:'Japan',          flag:'🇯🇵', ping:12,  load:32, selected:true },
+    { id:'sin-02', city:'Singapore',   country:'Singapore',      flag:'🇸🇬', ping:38,  load:47 },
+    { id:'syd-03', city:'Sydney',      country:'Australia',      flag:'🇦🇺', ping:128, load:61 },
+    { id:'lax-04', city:'Los Angeles', country:'United States',  flag:'🇺🇸', ping:92,  load:24 },
+    { id:'nyc-05', city:'New York',    country:'United States',  flag:'🇺🇸', ping:142, load:53 },
+    { id:'lon-06', city:'London',      country:'United Kingdom', flag:'🇬🇧', ping:18,  load:40 },
+    { id:'fra-07', city:'Frankfurt',   country:'Germany',        flag:'🇩🇪', ping:22,  load:68 },
+    { id:'cdg-08', city:'Paris',       country:'France',         flag:'🇫🇷', ping:26,  load:35 },
+    { id:'blr-09', city:'Bangalore',   country:'India',          flag:'🇮🇳', ping:57,  load:72 },
+    { id:'yyz-10', city:'Toronto',     country:'Canada',         flag:'🇨🇦', ping:118, load:29 },
+    { id:'gru-11', city:'São Paulo',   country:'Brazil',         flag:'🇧🇷', ping:164, load:58 },
+    { id:'jnb-12', city:'Johannesburg',country:'South Africa',   flag:'🇿🇦', ping:205, load:44 },
+  ];
+
+  function pingColor(ms){
+    if (ms < 60) return '#34d399';
+    if (ms < 150) return '#fbbf24';
+    return '#f87171';
+  }
+  function loadColor(p){
+    if (p > 70) return '#fbbf24';
+    if (p > 40) return '#60a5fa';
+    return '#34d399';
+  }
+
+  const list = document.getElementById('serverList');
+  servers.forEach(s=>{
+    const el = document.createElement('div');
+    el.className = 'server-row' + (s.selected ? ' selected' : '');
+    el.dataset.id = s.id;
+    el.onclick = () => {
+      list.querySelectorAll('.server-row').forEach(r=>r.classList.remove('selected'));
+      el.classList.add('selected');
+    };
+    el.innerHTML = `
+      <div class="server-left">
+        <div class="flag">${s.flag}</div>
+        <div>
+          <div class="city">${s.city}</div>
+          <div class="country">${s.country}</div>
+        </div>
+      </div>
+      <div class="ping" style="color:${pingColor(s.ping)}">${s.ping} ms</div>
+      ${s.selected
+        ? `<check-badge>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <span>${s.load}%</span>
+          </check-badge>`
+        : `<div class="load-wrap">
+            <div class="load-bar-bg"><div class="load-bar-fill" style="width:${s.load}%;background:${loadColor(s.load)}"></div></div>
+            <div class="load-text">${s.load}%</div>
+          </div>`
+      }
+    `;
+    list.appendChild(el);
+  });
+
+  /* ----- Shield toggle ----- */
+  let connected = true;
+  function toggleShield(btn){
+    connected = !connected;
+    const sub = document.getElementById('shieldSub');
+    const statusLabel = document.querySelector('.status-label');
+    const statusWord = document.querySelector('.status-word');
+    const pulse = document.querySelector('.pulse-dot');
+    const vpnIp = document.getElementById('vpnIp');
+    const throughput = document.querySelector('.throughput');
+    if (connected){
+      btn.classList.remove('off');
+      sub.textContent = 'ACTIVE';
+      statusLabel.textContent = 'VPN TUNNEL LOCKED';
+      statusWord.textContent = 'Protected';
+      pulse.className = 'pulse-dot';
+      vpnIp.textContent = '194.26.29.112';
+      throughput.style.display = 'flex';
+    } else {
+      btn.classList.add('off');
+      sub.textContent = 'TAP TO ARM';
+      statusLabel.textContent = 'TUNNEL DISARMED';
+      statusWord.textContent = 'Exposed';
+      pulse.className = 'pulse-dot danger';
+      vpnIp.textContent = 'Unmasked Origin';
+      throughput.style.display = 'none';
+    }
+  }
+
+  /* ----- Handover simulator ----- */
+  let handing = false;
+  function doHandover(btn){
+    if (handing || !connected) return;
+    handing = true;
+    const hoText = document.getElementById('hoText');
+    const hoIcon = document.getElementById('hoIcon');
+    const hoSuccess = document.getElementById('hoSuccess');
+    hoText.textContent = 'Switching Networks...';
+    hoIcon.style.animation = 'spin 0.7s linear infinite';
+    setTimeout(()=>{
+      hoText.textContent = 'Handover Passed (0.00ms Leak)';
+      hoIcon.style.animation = '';
+      hoSuccess.style.display = 'flex';
+      setTimeout(()=>{
+        hoText.textContent = 'Simulate Wi-Fi → 5G Switch';
+        hoSuccess.style.display = 'none';
+        handing = false;
+      }, 3500);
+    }, 1200);
+  }
+
+  /* ----- Throughput live ticker ----- */
+  setInterval(()=>{
+    if (!connected) return;
+    const down = (38 + Math.random()*12).toFixed(1);
+    const up = (9 + Math.random()*5).toFixed(1);
+    document.getElementById('tpDown').textContent = down + ' MB/s';
+    document.getElementById('tpUp').textContent = up + ' MB/s';
+  }, 1700);
+
+  /* ----- Settings interactions ----- */
+  function pickProto(row){
+    const group = document.getElementById('protoGroup');
+    group.querySelectorAll('.opt-row').forEach(r=>{
+      r.classList.remove('selected');
+      const right = r.querySelector('.opt-check, .opt-empty');
+      if (right.classList.contains('opt-check')){
+        right.outerHTML = `<div class="opt-empty"></div>`;
+      }
+    });
+    row.classList.add('selected');
+    const empty = row.querySelector('.opt-empty');
+    if (empty){
+      empty.outerHTML = `<div class="opt-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>`;
+    }
+  }
+  function pickTheme(row){
+    const group = document.getElementById('themeGroup');
+    group.querySelectorAll('.opt-row').forEach(r=>{
+      r.classList.remove('selected');
+      const right = r.querySelector('.opt-check, .opt-empty');
+      if (right.classList.contains('opt-check')){
+        right.outerHTML = `<div class="opt-empty"></div>`;
+      }
+    });
+    row.classList.add('selected');
+    const empty = row.querySelector('.opt-empty');
+    if (empty){
+      empty.outerHTML = `<div class="opt-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>`;
+    }
+  }
+  function resetAll(){
+    document.querySelectorAll('.set-card .toggle').forEach((t,i)=>{
+      // Defaults: alwaysOn=false, autoReconnect=true, killSwitch=false
+      const def = [false, true, false];
+      if (def[i]) t.classList.add('on'); else t.classList.remove('on');
+    });
+    // Reset protocol
+    const wg = document.querySelector('[data-proto="wireguard"]');
+    if (wg) pickProto(wg);
+    // Reset theme
+    const dk = document.querySelector('[data-theme="dark"]');
+    if (dk) pickTheme(dk);
+  }
+  function pickServer(el){
+    const parent = el.parentElement;
+    const rows = parent.querySelectorAll('.fastest');
+    rows.forEach(r=>r.classList.remove('selected'));
+    // Also remove the check badge in fastest if present
+    rows.forEach(r=>{
+      const badge = r.querySelector('check-badge');
+      if (badge && r !== el) badge.outerHTML = `<div style="width:20px;height:20px;border-radius:999px;border:1px solid rgba(255,255,255,0.14)"></div>`;
+    });
+    el.classList.add('selected');
+    if (!el.querySelector('check-badge')){
+      const placeholder = el.querySelector('[style*="width:20px"]');
+      if (placeholder) placeholder.outerHTML = `<check-badge><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></check-badge>`;
+    }
+  }
+</script>
+</body>
+</html>
