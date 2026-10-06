@@ -7,16 +7,15 @@ import {
   Pressable,
   Switch,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check } from 'lucide-react-native';
+import { Check, ExternalLink } from 'lucide-react-native';
 import { useApp } from '../context/AppContext';
 import {
   defaultSettings,
   Protocol,
-  ThemePref,
   protocolLabels,
-  themeLabels,
 } from '../constants/defaultSettings';
 import { colors, spacing, radius, font, fontSize } from '../theme';
 
@@ -109,6 +108,14 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+function openSystemVpnSettings() {
+  if (Platform.OS === 'android') {
+    Linking.sendIntent('android.settings.VPN_SETTINGS').catch(() => Linking.openSettings());
+  } else {
+    void Linking.openSettings();
+  }
+}
+
 export default function SettingsScreen() {
   const { settings, updateSetting } = useApp();
 
@@ -126,52 +133,42 @@ export default function SettingsScreen() {
         <SectionHeader title="CONNECTION" />
         <View style={styles.card}>
           <ToggleRow
-            label="Always-On"
-            value={settings.alwaysOn}
-            onChange={(v) => updateSetting('alwaysOn', v)}
-            a11y="Toggle Always-On VPN"
-          />
-          <View style={styles.divider} />
-          <ToggleRow
             label="Auto-Reconnect"
             value={settings.autoReconnect}
             onChange={(v) => updateSetting('autoReconnect', v)}
-            a11y="Toggle Auto Reconnect"
+            a11y="Toggle automatic failover to another server"
           />
           <View style={styles.divider} />
-          <ToggleRow
-            label="Kill Switch"
-            value={settings.killSwitch}
-            onChange={(v) => updateSetting('killSwitch', v)}
-            a11y="Toggle Kill Switch"
-          />
+          <Pressable
+            onPress={openSystemVpnSettings}
+            accessibilityLabel="Open Android VPN settings for Always-On and Kill Switch"
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surfaceMed }]}
+          >
+            <View style={{ flex: 1, paddingRight: spacing.md }}>
+              <Text style={styles.rowLabel}>Always-On & Kill Switch</Text>
+              <Text style={styles.rowHint}>
+                Set in Android VPN settings: tap the gear next to AlwaysOnVPN, then enable "Always-on VPN" and
+                "Block connections without VPN".
+              </Text>
+            </View>
+            <ExternalLink size={16} color={colors.textMuted} strokeWidth={1.8} />
+          </Pressable>
         </View>
 
         <SectionHeader title="PROTOCOL" />
         <OptionGroup<Protocol>
-          options={(['wireguard', 'openvpn-udp', 'openvpn-tcp'] as const)}
+          options={(['any', 'udp', 'tcp'] as const)}
           labels={protocolLabels}
           value={settings.protocol}
           onChange={(v) => updateSetting('protocol', v)}
           a11yPrefix="VPN Protocol"
         />
 
-        <SectionHeader title="APPEARANCE" />
-        <OptionGroup<ThemePref>
-          options={(['dark', 'system'] as const)}
-          labels={themeLabels}
-          value={settings.theme}
-          onChange={(v) => updateSetting('theme', v)}
-          a11yPrefix="Theme"
-        />
-
         <Pressable
           onPress={() => {
-            updateSetting('alwaysOn', defaultSettings.alwaysOn);
             updateSetting('autoReconnect', defaultSettings.autoReconnect);
-            updateSetting('killSwitch', defaultSettings.killSwitch);
             updateSetting('protocol', defaultSettings.protocol);
-            updateSetting('theme', defaultSettings.theme);
           }}
           accessibilityLabel="Reset all settings to defaults"
           accessibilityRole="button"
@@ -184,8 +181,9 @@ export default function SettingsScreen() {
         </Pressable>
 
         <View style={styles.footer}>
-          <Text style={styles.footerLine}>
-            AlwaysOnVPN Mobile v1.0.0 · Build 20261005
+          <Text style={styles.footerLine}>AlwaysOnVPN Mobile v1.0.0</Text>
+          <Text style={[styles.footerLine, { marginTop: spacing.xs, textAlign: 'center' }]}>
+            Servers by VPN Gate (vpngate.net), run by volunteers.{'\n'}Server operators can see your traffic.
           </Text>
         </View>
       </ScrollView>
@@ -226,6 +224,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  rowHint: {
+    marginTop: 2,
+    fontSize: fontSize.sm,
+    color: colors.textDim,
+    lineHeight: 15,
   },
   rowLabel: {
     fontSize: fontSize.base,

@@ -58,6 +58,7 @@ declare module 'lucide-react-native' {
   export const ArrowUp: IconComponent;
   export const ArrowDown: IconComponent;
   export const MapPin: IconComponent;
+  export const ExternalLink: IconComponent;
   export const Crown: IconComponent;
   export const Star: IconComponent;
   export const Moon: IconComponent;

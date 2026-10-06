@@ -6,21 +6,23 @@ import {
   FlatList,
   Pressable,
   ListRenderItem,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, Zap } from 'lucide-react-native';
-import { useApp } from '../context/AppContext';
-import { servers, ServerLocation } from '../constants/servers';
+import { useApp, AUTO_SERVER_ID } from '../context/AppContext';
+import { VpnServer } from '../constants/servers';
 import { colors, spacing, radius, font, fontSize } from '../theme';
 
-function pingColor(ms: number): string {
-  if (ms < 60) return colors.success;
-  if (ms < 150) return colors.warning;
+function speedColor(mbps: number): string {
+  if (mbps >= 100) return colors.success;
+  if (mbps >= 30) return colors.warning;
   return colors.danger;
 }
 
 interface Props {
-  server: ServerLocation;
+  server: VpnServer;
   selected: boolean;
   onPress: () => void;
 }
@@ -29,7 +31,7 @@ function ServerRow({ server, selected, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
-      accessibilityLabel={`Select ${server.city} server`}
+      accessibilityLabel={`Select ${server.country} server ${server.hostName}`}
       accessibilityRole="button"
       style={({ pressed }) => [
         styles.row,
@@ -39,42 +41,27 @@ function ServerRow({ server, selected, onPress }: Props) {
     >
       <View style={styles.rowLeft}>
         <Text style={styles.flag}>{server.flagEmoji}</Text>
-        <View style={{ marginLeft: spacing.md }}>
-          <Text style={styles.city}>{server.city}</Text>
-          <Text style={styles.country}>{server.country}</Text>
+        <View style={{ marginLeft: spacing.md, flex: 1 }}>
+          <Text style={styles.city} numberOfLines={1}>
+            {server.country}
+          </Text>
+          <Text style={styles.country} numberOfLines={1}>
+            {server.ip} · {server.proto.toUpperCase()}
+          </Text>
         </View>
       </View>
       <View style={styles.rowCenter}>
-        <Text style={[styles.ping, { color: pingColor(server.pingMs) }]}>
-          {server.pingMs} ms
+        <Text style={[styles.ping, { color: speedColor(server.speedMbps) }]}>
+          {server.speedMbps} Mb
         </Text>
       </View>
       <View style={styles.rowRight}>
         {selected ? (
           <View style={styles.selectedBadge}>
             <Check size={12} color={colors.text} strokeWidth={2.4} />
-            <Text style={styles.loadSelected}>{server.loadPercent}%</Text>
           </View>
         ) : (
-          <View style={styles.loadWrap}>
-            <View style={styles.loadBarBg}>
-              <View
-                style={[
-                  styles.loadBarFill,
-                  {
-                    width: `${server.loadPercent}%`,
-                    backgroundColor:
-                      server.loadPercent > 70
-                        ? colors.warning
-                        : server.loadPercent > 40
-                        ? colors.info
-                        : colors.success,
-                  },
-                ]}
-              />
-            </View>
-            <Text style={styles.loadText}>{server.loadPercent}%</Text>
-          </View>
+          <Text style={styles.loadText}>{server.sessions} users</Text>
         )}
       </View>
     </Pressable>
@@ -82,15 +69,16 @@ function ServerRow({ server, selected, onPress }: Props) {
 }
 
 export default function LocationsScreen() {
-  const { selectedServer, setSelectedServer } = useApp();
+  const { servers, selectedId, selectServer, serversLoading, serversError, refreshServers } = useApp();
 
-  const fastest = [...servers].sort((a, b) => a.pingMs - b.pingMs)[0];
+  const best = servers[0];
+  const autoSelected = selectedId === AUTO_SERVER_ID;
 
-  const renderItem: ListRenderItem<ServerLocation> = ({ item }) => (
+  const renderItem: ListRenderItem<VpnServer> = ({ item }) => (
     <ServerRow
       server={item}
-      selected={selectedServer.id === item.id}
-      onPress={() => setSelectedServer(item)}
+      selected={!autoSelected && selectedId === item.id}
+      onPress={() => selectServer(item.id)}
     />
   );
 
@@ -99,17 +87,21 @@ export default function LocationsScreen() {
       <View style={styles.screen}>
         <View style={styles.header}>
           <Text style={styles.title}>Server Locations</Text>
-          <Text style={styles.subtitle}>Tap a location to connect</Text>
+          <Text style={styles.subtitle}>
+            {servers.length > 0
+              ? `${servers.length} free VPN Gate servers · pull to refresh`
+              : 'Free public servers from VPN Gate'}
+          </Text>
         </View>
 
         <Pressable
-          onPress={() => fastest && setSelectedServer(fastest)}
+          onPress={() => selectServer(AUTO_SERVER_ID)}
           style={({ pressed }) => [
             styles.fastestCard,
-            selectedServer.id === fastest?.id && styles.rowSelected,
+            autoSelected && styles.rowSelected,
             pressed && { opacity: 0.9 },
           ]}
-          accessibilityLabel="Select fastest available server"
+          accessibilityLabel="Select best available server automatically"
           accessibilityRole="button"
         >
           <View style={styles.fastestLeft}>
@@ -117,32 +109,55 @@ export default function LocationsScreen() {
               <Zap size={14} color={colors.warning} fill={colors.warning} strokeWidth={1.5} />
             </View>
             <View style={{ marginLeft: spacing.md }}>
-              <Text style={styles.city}>Fastest Available</Text>
+              <Text style={styles.city}>Best Available</Text>
               <Text style={styles.country}>
-                Auto · {fastest?.city} · {fastest?.pingMs} ms
+                {best ? `Auto · ${best.country} · ${best.speedMbps} Mbps` : 'Auto · waiting for list'}
               </Text>
             </View>
           </View>
-          {selectedServer.id === fastest?.id && (
+          {autoSelected && (
             <View style={[styles.selectedBadge, { paddingRight: 8 }]}>
               <Check size={12} color={colors.text} strokeWidth={2.4} />
             </View>
           )}
         </Pressable>
 
-        <FlatList
-          data={servers}
-          keyExtractor={(s) => s.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingTop: spacing.sm, paddingBottom: spacing.xl }}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-          showsVerticalScrollIndicator={false}
-          getItemLayout={(_, index) => ({
-            length: 68 + spacing.sm,
-            offset: index * (68 + spacing.sm),
-            index,
-          })}
-        />
+        {serversError && (
+          <Pressable onPress={refreshServers} accessibilityRole="button" style={styles.errorCard}>
+            <Text style={styles.errorText}>{serversError}</Text>
+            <Text style={styles.retryText}>Tap to retry</Text>
+          </Pressable>
+        )}
+
+        {serversLoading && servers.length === 0 ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={colors.textMuted} />
+            <Text style={styles.loadText}>Loading servers...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={servers}
+            keyExtractor={(s) => s.id}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingTop: spacing.sm, paddingBottom: spacing.xl }}
+            ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={serversLoading}
+                onRefresh={refreshServers}
+                tintColor={colors.textMuted}
+                colors={[colors.text]}
+                progressBackgroundColor={colors.surfaceElevated}
+              />
+            }
+            getItemLayout={(_, index) => ({
+              length: 68 + spacing.sm,
+              offset: index * (68 + spacing.sm),
+              index,
+            })}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -279,5 +294,29 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.full,
     backgroundColor: colors.text,
+  },
+  errorCard: {
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.danger,
+    backgroundColor: 'rgba(248, 113, 113, 0.08)',
+  },
+  errorText: {
+    fontFamily: font.mono,
+    fontSize: fontSize.sm,
+    color: colors.danger,
+  },
+  retryText: {
+    marginTop: spacing.xs,
+    fontFamily: font.mono,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  loading: {
+    paddingTop: spacing['4xl'],
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 });

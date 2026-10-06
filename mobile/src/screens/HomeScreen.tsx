@@ -9,35 +9,12 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Shield,
-  Globe,
-  Server,
-  Lock,
-  RefreshCw,
-  CheckCircle2,
-  Wifi,
-  Signal,
-  BatteryFull,
-} from 'lucide-react-native';
+import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
+import { Shield, Globe, Server, Lock, MapPin, AlertTriangle } from 'lucide-react-native';
 import { useApp } from '../context/AppContext';
 import { colors, spacing, radius, font, fontSize } from '../theme';
 
-function StatusBar() {
-  return (
-    <View style={styles.statusBar}>
-      <Text style={styles.statusTime}>12:00</Text>
-      <View style={styles.statusNotch} />
-      <View style={styles.statusIcons}>
-        <Signal size={12} color={colors.text} strokeWidth={2} />
-        <Wifi size={12} color={colors.text} strokeWidth={2} />
-        <BatteryFull size={14} color={colors.text} strokeWidth={2} />
-      </View>
-    </View>
-  );
-}
-
-function AppHeader({ alwaysOn }: { alwaysOn: boolean }) {
+function AppHeader({ protocolLabel }: { protocolLabel: string }) {
   return (
     <View style={styles.appHeader}>
       <View style={styles.appHeaderLogo}>
@@ -46,20 +23,8 @@ function AppHeader({ alwaysOn }: { alwaysOn: boolean }) {
         </View>
         <Text style={styles.appHeaderTitle}>AlwaysOnVPN</Text>
       </View>
-      <View
-        style={[
-          styles.alwaysOnPill,
-          alwaysOn && styles.alwaysOnPillActive,
-        ]}
-      >
-        <Text
-          style={[
-            styles.alwaysOnPillText,
-            alwaysOn && styles.alwaysOnPillTextActive,
-          ]}
-        >
-          ALWAYS-ON
-        </Text>
+      <View style={styles.alwaysOnPill}>
+        <Text style={styles.alwaysOnPillText}>{protocolLabel}</Text>
       </View>
     </View>
   );
@@ -111,17 +76,36 @@ function PulsingDot({ color }: { color: string }) {
   );
 }
 
+function formatDuration(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
 export default function HomeScreen() {
-  const { isConnected, connecting, selectedServer, settings, toggleConnection } = useApp();
-  const [throughputDown, setThroughputDown] = useState(42.1);
-  const [throughputUp, setThroughputUp] = useState(11.4);
-  const [simulatingHandover, setSimulatingHandover] = useState(false);
-  const [handoverSuccess, setHandoverSuccess] = useState(false);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const {
+    status,
+    isConnected,
+    statusMessage,
+    error,
+    connectedAt,
+    activeServer,
+    selectedServer,
+    serversLoading,
+    toggleConnection,
+  } = useApp();
+  const [now, setNow] = useState(Date.now());
   const shieldSpin = useRef(new Animated.Value(0)).current;
-  const handoverSpin = useRef(new Animated.Value(0)).current;
+
+  const busy = status === 'connecting' || status === 'disconnecting';
+  const server = activeServer ?? selectedServer;
 
   useEffect(() => {
-    if (!connecting) {
+    if (!busy) {
       shieldSpin.stopAnimation();
       shieldSpin.setValue(0);
       return;
@@ -130,70 +114,43 @@ export default function HomeScreen() {
     const anim = Animated.loop(
       Animated.timing(shieldSpin, {
         toValue: 1,
-        duration: 700,
+        duration: 1400,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
     );
     anim.start();
     return () => anim.stop();
-  }, [connecting, shieldSpin]);
+  }, [busy, shieldSpin]);
 
   useEffect(() => {
-    if (!simulatingHandover) {
-      handoverSpin.stopAnimation();
-      handoverSpin.setValue(0);
-      return;
-    }
-    handoverSpin.setValue(0);
-    const anim = Animated.loop(
-      Animated.timing(handoverSpin, {
-        toValue: 1,
-        duration: 700,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [simulatingHandover, handoverSpin]);
+    if (!isConnected) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   const shieldRotate = shieldSpin.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
-  const handoverRotate = handoverSpin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
-  useEffect(() => {
-    if (!isConnected) return;
-    const interval = setInterval(() => {
-      setThroughputDown(parseFloat((38 + Math.random() * 12).toFixed(1)));
-      setThroughputUp(parseFloat((9 + Math.random() * 5).toFixed(1)));
-    }, 1700);
-    return () => clearInterval(interval);
-  }, [isConnected]);
-
-  const triggerHandover = () => {
-    if (simulatingHandover || !isConnected) return;
-    setSimulatingHandover(true);
-    setHandoverSuccess(false);
-    setTimeout(() => {
-      setSimulatingHandover(false);
-      setHandoverSuccess(true);
-      setTimeout(() => setHandoverSuccess(false), 3500);
-    }, 1200);
-  };
-
-  const statusLabel = connecting
-    ? 'RE-HANDSHAKING...'
-    : isConnected
-    ? 'VPN TUNNEL LOCKED'
-    : 'TUNNEL DISARMED';
-  const statusWord = connecting ? 'Connecting...' : isConnected ? 'Protected' : 'Exposed';
-  const statusColor = connecting ? colors.warning : isConnected ? colors.success : colors.danger;
+  const statusLabel =
+    status === 'connecting'
+      ? statusMessage || 'Connecting'
+      : status === 'disconnecting'
+      ? 'Closing tunnel'
+      : isConnected
+      ? 'VPN tunnel active'
+      : 'Tunnel off';
+  const statusWord =
+    status === 'connecting'
+      ? 'Connecting...'
+      : status === 'disconnecting'
+      ? 'Disconnecting...'
+      : isConnected
+      ? 'Protected'
+      : 'Not protected';
+  const statusColor = busy ? colors.warning : isConnected ? colors.success : colors.danger;
 
   const buttonBase: ViewStyle = {
     width: 128,
@@ -206,25 +163,24 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
-        <StatusBar />
-        <AppHeader alwaysOn={settings.alwaysOn} />
+        <AppHeader protocolLabel={server ? `OPENVPN ${server.proto.toUpperCase()}` : 'OPENVPN'} />
 
         <View style={styles.content}>
           <View style={styles.statusSection}>
-            <Text style={styles.statusLabel}>{statusLabel}</Text>
+            <Text style={styles.statusLabel} numberOfLines={1}>
+              {statusLabel}
+            </Text>
             <View style={styles.statusRow}>
               <PulsingDot color={statusColor} />
-              <Text style={[styles.statusWord, { color: colors.text }]}>
-                {statusWord}
-              </Text>
+              <Text style={[styles.statusWord, { color: colors.text }]}>{statusWord}</Text>
             </View>
           </View>
 
           <View style={styles.shieldWrap}>
             <Pressable
               onPress={toggleConnection}
-              disabled={connecting}
-              accessibilityLabel={isConnected ? 'Disconnect VPN' : 'Connect VPN'}
+              disabled={status === 'disconnecting'}
+              accessibilityLabel={isConnected || busy ? 'Disconnect VPN' : 'Connect VPN'}
               accessibilityRole="button"
               hitSlop={16}
             >
@@ -247,24 +203,11 @@ export default function HomeScreen() {
                       },
                 ]}
               >
-                <Animated.View
-                  style={{
-                    transform: [{ rotate: shieldRotate }],
-                  }}
-                >
-                  <Shield
-                    size={48}
-                    strokeWidth={1.8}
-                    color={isConnected ? '#000' : colors.text}
-                  />
+                <Animated.View style={{ transform: [{ rotate: shieldRotate }] }}>
+                  <Shield size={48} strokeWidth={1.8} color={isConnected ? '#000' : colors.text} />
                 </Animated.View>
-                <Text
-                  style={[
-                    styles.shieldSubText,
-                    { color: isConnected ? '#000' : colors.text },
-                  ]}
-                >
-                  {connecting ? 'LOCKING...' : isConnected ? 'ACTIVE' : 'TAP TO ARM'}
+                <Text style={[styles.shieldSubText, { color: isConnected ? '#000' : colors.text }]}>
+                  {status === 'connecting' ? 'TAP TO CANCEL' : isConnected ? 'TAP TO STOP' : busy ? '...' : 'TAP TO CONNECT'}
                 </Text>
               </View>
             </Pressable>
@@ -274,30 +217,34 @@ export default function HomeScreen() {
             <View style={styles.gatewayRow}>
               <View style={styles.gatewayLabelWrap}>
                 <Globe size={14} color={colors.textMuted} strokeWidth={1.8} />
-                <Text style={styles.gatewayLabel}>Gateway</Text>
+                <Text style={styles.gatewayLabel}>Location</Text>
               </View>
-              <Text style={styles.gatewayValue}>
-                {selectedServer.city} ({selectedServer.id.toUpperCase()})
+              <Text style={styles.gatewayValue} numberOfLines={1}>
+                {server
+                  ? `${server.flagEmoji} ${server.country}`
+                  : serversLoading
+                  ? 'Loading servers...'
+                  : isConnected
+                  ? 'Active tunnel'
+                  : 'No server'}
               </Text>
             </View>
             <View style={styles.gatewayDivider} />
             <View style={styles.gatewayRow}>
               <View style={styles.gatewayLabelWrap}>
                 <Server size={14} color={colors.textMuted} strokeWidth={1.8} />
-                <Text style={styles.gatewayLabel}>Virtual IP</Text>
+                <Text style={styles.gatewayLabel}>{isConnected ? 'Exit IP' : 'Server IP'}</Text>
               </View>
-              <Text style={[styles.gatewayValue, styles.gatewayMono]}>
-                {isConnected ? '194.26.29.112' : 'Unmasked Origin'}
-              </Text>
+              <Text style={[styles.gatewayValue, styles.gatewayMono]}>{server ? server.ip : '—'}</Text>
             </View>
             <View style={styles.gatewayDivider} />
             <View style={styles.gatewayRow}>
               <View style={styles.gatewayLabelWrap}>
                 <Lock size={14} color={colors.textMuted} strokeWidth={1.8} />
-                <Text style={styles.gatewayLabel}>Cipher</Text>
+                <Text style={styles.gatewayLabel}>Transport</Text>
               </View>
               <Text style={[styles.gatewayValue, styles.gatewayMono, styles.gatewaySmall]}>
-                ChaCha20-Poly1305
+                {server ? `${server.proto.toUpperCase()} :${server.port}` : '—'}
               </Text>
             </View>
           </View>
@@ -305,53 +252,36 @@ export default function HomeScreen() {
           {isConnected && (
             <View style={styles.throughputRow}>
               <View style={styles.throughputCell}>
-                <Text style={styles.throughputKey}>DOWN</Text>
-                <Text style={styles.throughputValue}>{throughputDown} MB/s</Text>
+                <Text style={styles.throughputKey}>UPTIME</Text>
+                <Text style={styles.throughputValue}>
+                  {connectedAt ? formatDuration(now - connectedAt) : '--:--:--'}
+                </Text>
               </View>
               <View style={styles.throughputCell}>
-                <Text style={styles.throughputKey}>UP</Text>
-                <Text style={styles.throughputValue}>{throughputUp} MB/s</Text>
+                <Text style={styles.throughputKey}>SERVER SPEED</Text>
+                <Text style={styles.throughputValue}>{server ? `${server.speedMbps} Mbps` : '—'}</Text>
               </View>
             </View>
           )}
         </View>
 
         <View style={styles.footer}>
-          <View style={styles.footerDivider} />
-          <Pressable
-            onPress={triggerHandover}
-            disabled={simulatingHandover || !isConnected}
-            accessibilityLabel="Simulate Wi-Fi to 5G handover"
-            accessibilityRole="button"
-            style={({ pressed }) => [
-              styles.handoverBtn,
-              pressed && { opacity: 0.85 },
-              (!isConnected || simulatingHandover) && { opacity: 0.4 },
-            ]}
-          >
-            <Animated.View
-              style={{
-                transform: [{ rotate: handoverRotate }],
-              }}
-            >
-              <RefreshCw size={14} color={colors.text} strokeWidth={1.8} />
-            </Animated.View>
-            <Text style={styles.handoverText}>
-              {simulatingHandover
-                ? 'Switching Networks...'
-                : handoverSuccess
-                ? 'Handover Passed (0.00ms Leak)'
-                : 'Simulate Wi-Fi → 5G Switch'}
-            </Text>
-          </Pressable>
-          {handoverSuccess && (
-            <View style={styles.handoverSuccess}>
-              <CheckCircle2 size={12} color={colors.success} strokeWidth={2} />
-              <Text style={styles.handoverSuccessText}>
-                0 packets leaked outside tunnel.
-              </Text>
+          {error && (
+            <View style={styles.errorRow}>
+              <AlertTriangle size={12} color={colors.danger} strokeWidth={2} />
+              <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
+          <View style={styles.footerDivider} />
+          <Pressable
+            onPress={() => navigation.navigate('Locations')}
+            accessibilityLabel="Change VPN location"
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.handoverBtn, pressed && { opacity: 0.85 }]}
+          >
+            <MapPin size={14} color={colors.text} strokeWidth={1.8} />
+            <Text style={styles.handoverText}>Change Location</Text>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -364,31 +294,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
-  },
-  statusBar: {
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  statusTime: {
-    fontFamily: font.mono,
-    fontSize: fontSize.sm,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  statusNotch: {
-    width: 64,
-    height: 14,
-    backgroundColor: '#000',
-    borderRadius: 7,
-  },
-  statusIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   appHeader: {
     paddingVertical: spacing.md,
@@ -428,19 +333,11 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     backgroundColor: colors.surfaceMed,
   },
-  alwaysOnPillActive: {
-    backgroundColor: colors.text,
-    borderColor: colors.text,
-  },
   alwaysOnPillText: {
     fontFamily: font.mono,
     fontSize: fontSize.xs,
     color: colors.textMuted,
     fontWeight: '600',
-  },
-  alwaysOnPillTextActive: {
-    color: '#000',
-    fontWeight: '700',
   },
   content: {
     flex: 1,
@@ -573,16 +470,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.text,
   },
-  handoverSuccess: {
+  errorRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'flex-start',
     gap: 6,
-    marginTop: spacing.sm,
+    marginBottom: spacing.md,
   },
-  handoverSuccessText: {
+  errorText: {
+    flex: 1,
     fontFamily: font.mono,
     fontSize: fontSize.xs,
-    color: colors.success,
+    color: colors.danger,
+    lineHeight: 15,
   },
 });

@@ -74,6 +74,9 @@ jobs:
       - name: Install npm dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Download OpenVPN native libraries
+        run: npm run fetch:ovpn -- armeabi-v7a arm64-v8a
+
       - name: Expo prebuild (Android)
         run: npx expo prebuild --platform android --clean --no-install
 

@@ -25,6 +25,14 @@ npm run ios            # Launch on iOS simulator (Mac only)
 npm run ts:check       # Strict TypeScript compile check
 ```
 
+## How the VPN works
+
+- Server list: fetched live from the free [VPN Gate](https://www.vpngate.net) relay network (`src/services/vpngate.ts`).
+- Tunnel: real OpenVPN via [`react-native-simple-openvpn`](https://github.com/ccnnde/react-native-simple-openvpn) (ics-openvpn on Android).
+- `plugins/withOpenVpn.js` wires the native module into the prebuilt Android project; `npm run fetch:ovpn` downloads the OpenVPN `.so` files it needs.
+- Native module, so it does **not** run in Expo Go — use the APK or a dev build.
+- VPN Gate servers are run by volunteers who can see your traffic. Use HTTPS for anything sensitive.
+
 ## Download the APK
 
 Every successful build on `main` publishes the APK to the `latest-apk` pre-release:

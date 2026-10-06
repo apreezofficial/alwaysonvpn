@@ -12,3 +12,6 @@ npm-debug.*
 android/
 ios/
 .DS_Store
+
+# OpenVPN native libs (downloaded by npm run fetch:ovpn)
+native/jniLibs/
