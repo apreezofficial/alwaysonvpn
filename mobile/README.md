@@ -25,6 +25,14 @@ npm run ios            # Launch on iOS simulator (Mac only)
 npm run ts:check       # Strict TypeScript compile check
 ```
 
+## Download the APK
+
+Every successful build on `main` publishes the APK to the `latest-apk` pre-release:
+
+https://github.com/apreezofficial/alwaysonvpn/releases/download/latest-apk/alwaysonvpn.apk
+
+You can also grab it from the workflow run's **Artifacts** section.
+
 ## Local Android build (produces APK)
 
 Requires Java 17 and Android SDK (or use the GitHub Actions workflow).
