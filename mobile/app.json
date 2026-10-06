@@ -20,7 +20,9 @@
       },
       "package": "com.alwaysonvpn.mobile"
     },
-    "web": {}
+    "web": {},
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }
-
